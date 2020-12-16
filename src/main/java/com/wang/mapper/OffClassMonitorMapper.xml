@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.wang.dao.OffClassMonitorDao" >
+    <resultMap id="BaseResultMap" type="com.wang.bean.OffClassMonitor">
+        <id column="id" property="id" jdbcType="INTEGER" />
+        <result column="student_code" property="studentCode" jdbcType="VARCHAR" />
+        <result column="student_name" property="studentName" jdbcType="VARCHAR" />
+        <result column="school_id" property="schoolId" jdbcType="INTEGER" />
+        <result column="class_code" property="classCode" jdbcType="VARCHAR" />
+        <result column="teacher_code" property="teacherCode" jdbcType="VARCHAR" />
+        <result column="teacher_email" property="teacherEmail" jdbcType="VARCHAR" />
+        <result column="teacher_name" property="teacherName" jdbcType="VARCHAR" />
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP" />
+        <result column="bill_state" property="billState" jdbcType="INTEGER" />
+        <result column="follow_status" property="followStatus" jdbcType="INTEGER" />
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+        <result column="img_url" property="imgUrl" jdbcType="VARCHAR" />
+        <result column="bill_code" property="billCode" jdbcType="VARCHAR" />
+        <result column="progress" property="progress" jdbcType="VARCHAR" />
+        <result column="progress" property="progress" jdbcType="VARCHAR" />
+        <result column="apply_time" property="applyTime" jdbcType="TIMESTAMP" />
+        <result column="message" property="message" jdbcType="VARCHAR" />
+        <result column="dept_code" property="deptCode" jdbcType="VARCHAR" />
+        <result column="dept_name" property="deptName" jdbcType="VARCHAR" />
+        <result column="follow_email" property="followEmail" jdbcType="VARCHAR" />
+        <result column="follow_name" property="followName" jdbcType="VARCHAR" />
+        <result column="subject_code" property="subjectCode" jdbcType="VARCHAR" />
+        <result column="subject_name" property="subjectName" jdbcType="VARCHAR" />
+        <result column="quarter_code" property="quarterCode" jdbcType="VARCHAR" />
+        <result column="quarter_name" property="quarterName" jdbcType="VARCHAR" />
+        <result column="begin_class_date" property="beginClassDate" jdbcType="VARCHAR" />
+        <result column="old_student_flag" property="oldStudentFlag" jdbcType="VARCHAR" />
+        <result column="teacher_identity" property="teacherIdentity" jdbcType="VARCHAR" />
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+        <!--部分字段暂时不做显示用，这里不做映射-->
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,student_code,student_name, school_id, class_code, teacher_code, teacher_email,teacher_name, submit_time,bill_state,
+        <![CDATA[ case when follow_status =0 and apply_time <DATE_SUB(NOW(), INTERVAL 2 DAY) then 3 else follow_status end as follow_status ]]>,
+        create_time,img_url,bill_code,progress,apply_time,message,dept_code,dept_name,follow_email,follow_name,subject_code,subject_name,
+        quarter_code,quarter_name,begin_class_date,old_student_flag,teacher_identity,update_time 
+    </sql>
+
+    <select id="selectByStuAndClass" parameterType="com.wang.bean.OffClassMonitor" resultMap="BaseResultMap">
+        select  id,student_name,bill_code from off_class_monitor where student_code = #{studentCode,jdbcType=VARCHAR} and class_code = #{classCode,jdbcType=VARCHAR} and old_card_code = #{cardCode,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByCondition" parameterType="com.wang.bean.OffClassMonitor" resultMap="BaseResultMap">
+        select  <include refid="Base_Column_List" /> from off_class_monitor where 1=1
+		<if test="applyBeginDate !=null and applyBeginDate !='' ">
+            and <![CDATA[ apply_time > ]]> #{applyBeginDate,jdbcType=VARCHAR}
+        </if>
+        <if test="applyEndDate !=null and applyEndDate !='' ">
+            and <![CDATA[ apply_time < ]]> #{applyEndDate,jdbcType=VARCHAR}
+        </if>
+		<if test="deptCode !=null and deptCode !='' ">
+            and dept_code = #{deptCode,jdbcType=VARCHAR}
+        </if>
+        <if test="subjectCode !=null and subjectCode !='' ">
+            and subject_code = #{subjectCode,jdbcType=VARCHAR}
+        </if>
+		<if test="teacherName !=null and teacherName !='' ">
+            and teacher_name like #{teacherName,jdbcType=VARCHAR}
+        </if>
+        <if test="teacherEmail !=null and teacherEmail !='' ">
+            and teacher_email like #{teacherEmail,jdbcType=VARCHAR}
+        </if>
+        <if test="billCode !=null and billCode !='' ">
+            and bill_code like #{billCode,jdbcType=VARCHAR}
+        </if>
+        <if test="studentCode !=null and studentCode !='' ">
+            and student_code like #{studentCode,jdbcType=VARCHAR}
+        </if>
+        <if test="studentName !=null and studentName !='' ">
+            and student_name like #{studentName,jdbcType=VARCHAR}
+        </if>
+        <if test="classCode !=null and classCode !='' ">
+            and class_code like #{classCode,jdbcType=VARCHAR}
+        </if>
+        <if test="billState !=null">
+            and bill_state = #{billState,jdbcType=INTEGER}
+        </if>
+        <if test="followStatus !=null">
+            and follow_status = #{followStatus,jdbcType=INTEGER}
+        </if>
+        <if test="handleState == 0"><!-- 未处理 -->
+            and follow_status = 0 and <![CDATA[apply_time > DATE_SUB(NOW(), INTERVAL 2 DAY) ]]>
+        </if>
+        <if test=" handleState == 1"><!-- 已处理 -->
+            and follow_status in (1,2)
+        </if>
+        <if test=" handleState == 2"><!-- 48小时未处理 -->
+            and follow_status = 0 and <![CDATA[apply_time <= DATE_SUB(NOW(), INTERVAL 2 DAY) ]]>
+        </if>
+        <if test=" handleState == 3"><!-- 成功挽退 -->
+            and follow_status = 1
+        </if>
+        <if test=" handleState == 4"><!-- 确认退班 -->
+            and follow_status = 2
+        </if>
+        <if test="id !=null">
+            and id = #{id,jdbcType=INTEGER}
+        </if>
+        <if test="oldStudentFlag !=null and oldStudentFlag !='' ">
+            and old_student_flag = #{oldStudentFlag,jdbcType=VARCHAR}
+        </if>
+        <if test="teacherIdentity !=null and teacherIdentity !='' ">
+            and teacher_identity = #{teacherIdentity,jdbcType=VARCHAR}
+        </if>
+        order by apply_time desc
+    </select>
+    
+    
+    <select id="selectPageByCondition"  resultMap="BaseResultMap">
+        select  <include refid="Base_Column_List" /> from off_class_monitor where 1=1 order by apply_time desc
+    </select>
+
+    <insert id="insert" parameterType="com.wang.bean.OffClassMonitor" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO off_class_monitor (
+            bill_code,
+            student_code,
+            student_name,
+            old_card_code,
+            school_id,
+            class_code,
+            teacher_code,
+            teacher_email,
+            teacher_name,
+            bill_state,
+            message,
+            follow_status,
+            progress,
+            progressMemo,
+            img_url,
+            submit_time,
+            apply_time,
+            create_time,
+            update_time,
+            operator,
+            dept_name,
+            dept_code,
+            follow_email,
+            follow_name,
+            subject_code,
+            subject_name,
+            quarter_code,
+            quarter_name,
+            begin_class_date,
+            old_student_flag,
+            teacher_identity    
+        )
+        values (
+            #{billCode,jdbcType=VARCHAR},
+            #{studentCode,jdbcType=VARCHAR},
+            #{studentName,jdbcType=VARCHAR},
+            #{cardCode,jdbcType=VARCHAR},
+            #{schoolId,jdbcType=INTEGER},
+            #{classCode,jdbcType=VARCHAR},
+            #{teacherCode,jdbcType=VARCHAR},
+            #{teacherEmail,jdbcType=VARCHAR},
+            #{teacherName,jdbcType=VARCHAR},
+            #{billState,jdbcType=INTEGER},
+            #{message,jdbcType=VARCHAR},
+            0,
+            #{progress,jdbcType=VARCHAR},
+            #{progressMemo,jdbcType=VARCHAR},
+            null,
+            null,
+            #{applyTime,jdbcType=TIMESTAMP},
+            #{createTime,jdbcType=TIMESTAMP},
+            null,
+            #{operator,jdbcType=VARCHAR},
+            #{deptName,jdbcType=VARCHAR},
+            #{deptCode,jdbcType=VARCHAR},
+            null,
+            null,
+            #{subjectCode,jdbcType=VARCHAR},
+            #{subjectName,jdbcType=VARCHAR},
+            #{quarterCode,jdbcType=VARCHAR},
+            #{quarterName,jdbcType=VARCHAR},
+            #{beginClassDate,jdbcType=VARCHAR},
+            #{oldStudentFlag,jdbcType=VARCHAR},
+            #{teacherIdentity,jdbcType=VARCHAR}
+        )
+    </insert>
+
+
+    <update id="updateByPrimaryKeySelective" parameterType="com.wang.bean.OffClassMonitor" >
+        update off_class_monitor
+        <set >
+            <if test="billState != null" >
+                bill_state = #{billState,jdbcType=INTEGER},
+            </if>
+            <if test="updateTime != null" >
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="followStatus != null">
+                follow_status = #{followStatus,jdbcType=INTEGER},
+            </if>
+            <if test="imgUrl != null">
+                img_url = #{imgUrl,jdbcType=INTEGER},
+            </if>
+            <if test="submitTime !=null">
+                submit_time = #{submitTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="message !=null">
+                message = #{message,jdbcType=VARCHAR},
+            </if>
+            <if test="followName !=null">
+                follow_name = #{followName,jdbcType=VARCHAR},
+            </if>
+            <if test="followEmail !=null">
+                follow_email = #{followEmail,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+    <select id="selectByPrimaryKey" parameterType="Integer" resultMap="BaseResultMap">
+        select  <include refid="Base_Column_List" /> from off_class_monitor where id = #{id,jdbcType=INTEGER}
+    </select>
+    
+    <select id="getAllDeptInfo" resultType="map">
+    	select DISTINCT dept_code,dept_name from off_class_monitor
+    </select>
+    <select id="getAllSubjectByDept" parameterType="String" resultType="map" >
+    	select distinct subject_code ,subject_name from off_class_monitor where dept_code = #{deptCode,jdbcType=VARCHAR} and (subject_code is not null or  subject_code!='' )
+    </select>
+</mapper>
